@@ -1,0 +1,6 @@
+This is an empty style sheet.
+Make sure to remove all unrelated text and format it properly!
+(Also make sure the file extension is .txt)
+Use https://doc.qt.io/qtforpython-6/overviews/stylesheet-examples.html for stylesheet help!
+For reference, Smart Notes uses QTextEdit, QLineEdit, QLabel, QPushButton, QListWidget widgets.
+Have fun making themes :D

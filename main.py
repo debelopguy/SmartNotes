@@ -3,10 +3,14 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from random import*
-import json
+import json,os
 #UI
 app = QApplication([])
 win = QWidget()
+settingswin = QWidget()
+
+notes = open("notes.json","r")
+settings = json.load(open("settings.json","r"))
 
 wicon = QIcon("notebook.png")
 wtitle = "Smart Notes 📝"
@@ -16,8 +20,27 @@ win.setWindowTitle(wtitle)
 screensize = app.primaryScreen().size()
 ssx,ssy = screensize.width(),screensize.height()
 sx,sy=int(ssx/2),int(ssy/1.6)
+#for ui scaling on different resolutions
 def getscaledsize(side,num):
     return int(sx*(num/900) if side=="y" else sy*(num/650))
+#for applying styles, on launch and settings change
+def ApplyStyle(style):
+    stylepath = "./Themes/"+style+".txt"
+    if os.path.exists(stylepath)==True:
+        StyleSheet = open(stylepath,"r").read()
+        app.setStyleSheet(StyleSheet)
+        with open("settings.json","w") as f:
+            json.dump({"theme":style},f)#TODO make it better after more settings. works for now
+    else:
+        msgbox = QMessageBox()
+        msgbox.setText("⚠ Warning!")
+        msgbox.setWindowTitle(wtitle)
+        msgbox.setWindowIcon(wicon)
+        msgbox.setInformativeText("Style \""+style+"\" doesnt exist in Themes folder! No style has been applied. It's recommended that you change the style in settings!")
+        msgbox.setStandardButtons(QMessageBox.Ok)
+        msgbox.exec()
+ApplyStyle(settings["theme"])
+
 win.move(int((ssx/2)-(sx/2)-(getscaledsize("x",100)/2)),int((ssy/2)-(sy/2)-(getscaledsize("y",50)/2)))
 win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",50))
 #LAYOUTING 🔥🔥🔥🔥🔥🔥🔥🔥
@@ -107,9 +130,7 @@ class Layouting:
                 tagitem = taglist.addItem(tag)
 
 LT = Layouting()
-notes = open("notes.json","r")
 # FUNCTIONS
-# TODO allat
 class ButtonFunctions:
     def __init__(self):
         self.chosenItem = None
@@ -182,10 +203,22 @@ class ButtonFunctions:
 
     def b2func(self):#SHOW NOTES BY TAG
         LT.showALLnotes(linee3.text())
+
+    def settings_style(self,item):
+        textslc.setText("Chosen Style: "+item.text())
+        ApplyStyle(item.text())
+    def b3func(self):#TODO SETTINGS BUTTON
+        #update style stuff
+        stylelist.clear()
+        themesavailable = os.listdir("./Themes")
+        for theme in themesavailable:
+            modifiedname = theme[0:len(theme)-4]
+            themebutton = stylelist.addItem(modifiedname)
+
+        settingswin.show()
 BFuncs = ButtonFunctions()
 
-
-#LAYOUTING: BUILDING (worst part ever) 🔥🔥🔥
+#MAIN UI 🔥🔥🔥
 BigHoriz = LT.addLayout({"layout":QHBoxLayout(win),"name":"BigHoriz1"})
 BigHoriz.addStretch() # ---
 #1st bighoriz
@@ -259,8 +292,44 @@ b2 = LT.addWidget({"widget":QPushButton(win),"name":"b2","layout":"BigVert"})
 b2.setText("Search Notes by Tag")
 b2.setFixedSize(int(sx/2)+getscaledsize("x",25),getscaledsize("y",25))
 SmallHoriz2.addStretch() # ---
+
+#settings button
+SmallHoriz3 = LT.addLayout({"layout":QHBoxLayout(win),"name":"SmallHoriz3"})
+BigVert.addLayout(SmallHoriz3)
+SmallHoriz3.addStretch() # ---
+
+b3 = LT.addWidget({"widget":QPushButton(win),"name":"b21","layout":"SmallHoriz3"})
+b3.setText("⚙Settings")
+b3.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
+
+SmallHoriz3.addStretch() # ---
 BigHoriz.addStretch() # ---
 
+#SETTINGS UI ⚙⚙⚙
+settingswin.setWindowTitle(wtitle+" - Settings")
+settingswin.setWindowIcon(wicon)
+
+settingswin.move(int((ssx/2)-(sx/4)),int((ssy/2)-(sy/2)))
+settingswin.setFixedSize(int(sx/2),int(sy/2))
+
+BVert1 = LT.addLayout({"layout":QVBoxLayout(settingswin),"name":"BVert1"})
+#BigVert.addLayout(SmallHoriz2)
+BVert1.addStretch() # ---
+#style list
+textsl = LT.addWidget({"widget":QLabel(win),"name":"textsl","layout":"BVert1"})
+textsl.setText("List of Styles")
+
+stylelist = LT.addWidget({"widget":QListWidget(win),"name":"stylelist","layout":"BVert1"})
+stylelist.setFixedSize(int(sx/2)-getscaledsize("x",25),getscaledsize("y",200))
+stylelist.itemClicked.connect(BFuncs.settings_style)
+
+textslc = LT.addWidget({"widget":QLabel(win),"name":"textslc","layout":"BVert1"})
+textslc.setText("Chosen Style: "+settings["theme"])
+
+thatsit = LT.addWidget({"widget":QLabel(win),"name":"thatsit","layout":"BVert1"})
+thatsit.setText("\nYep. Thats it. Nothing else in settings.")
+
+BVert1.addStretch() # ---
 # CONNECT FUNCTIONS
 b11.clicked.connect(BFuncs.b11func)
 b12.clicked.connect(BFuncs.b12func)
@@ -268,6 +337,7 @@ b12.clicked.connect(BFuncs.b12func)
 b21.clicked.connect(BFuncs.b21func)
 b22.clicked.connect(BFuncs.b22func)
 b2.clicked.connect(BFuncs.b2func)
+b3.clicked.connect(BFuncs.b3func)
 
 LT.showALLnotes("")
 

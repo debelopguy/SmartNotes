@@ -9,8 +9,18 @@ app = QApplication([])
 win = QWidget()
 settingswin = QWidget()
 
+#checking main directory TODO for later... this stupid thing doesnt work
+"""AppDataFolder = os.path.abspath(os.environ["LOCALAPPDATA"])
+os.mkdir(AppDataFolder+r"\DBSN")"""
+
+#loading files
 notes = open("notes.json","r")
 settings = json.load(open("settings.json","r"))
+defaultsettings = {
+    "theme":"Default",
+    "lettercount":False,
+    "starttext":"",
+}
 
 wicon = QIcon("notebook.png")
 wtitle = "Smart Notes 📝"
@@ -24,13 +34,23 @@ sx,sy=int(ssx/2),int(ssy/1.6)
 def getscaledsize(side,num):
     return int(sx*(num/900) if side=="y" else sy*(num/650))
 #for applying styles, on launch and settings change
+def changeSetting(setting,newval):
+    global settings
+    settings = json.load(open("settings.json","r"))
+    settings[setting]=newval
+    with open("settings.json","w") as f:
+        json.dump(settings,f)
+#setup settings
+for setting in defaultsettings:
+    if not setting in settings:
+        changeSetting(setting,defaultsettings[setting])
+
 def ApplyStyle(style):
     stylepath = "./Themes/"+style+".txt"
     if os.path.exists(stylepath)==True:
         StyleSheet = open(stylepath,"r").read()
         app.setStyleSheet(StyleSheet)
-        with open("settings.json","w") as f:
-            json.dump({"theme":style},f)#TODO make it better after more settings. works for now
+        changeSetting("theme",style)
     else:
         msgbox = QMessageBox()
         msgbox.setText("⚠ Warning!")
@@ -135,15 +155,17 @@ class ButtonFunctions:
     def __init__(self):
         self.chosenItem = None
 
+    def updateEditingText(self,newitem):
+        lettercount = " ("+str(len(textbox.toPlainText()))+" letters)" if settings["lettercount"] else ""
+        currenttext.setText("Currently Editing: "+(newitem.text()+lettercount if newitem!=None else "???"))
+
     def changeChosenItem(self,newitem):
         self.chosenItem = newitem
-        currenttext.setText("Currently Editing: "+(newitem.text() if newitem!=None else "???"))
+        textbox.setText("" if not newitem else LT.returnNote(self.chosenItem.text()))
+        self.updateEditingText(newitem)
+        listw.setCurrentItem(newitem)#visual selection:D
         LT.redrawTags(self.chosenItem)
 
-    def listItemClicked(self,item):
-        #selecting variable
-        self.changeChosenItem(item)
-        textbox.setText(LT.returnNote(self.chosenItem.text()))
     def listItemDoubleClicked(self,item):
         self.changeChosenItem(item)
         text,yuhhuh = QInputDialog.getText(win,"Smart Notes","Enter a new name for the note:",text=item.text())
@@ -158,6 +180,15 @@ class ButtonFunctions:
                 msgbox.exec()
             else:
                 LT.renameItem(item,text)
+    def getItemFromText(self,text):
+        items = listw.findItems(text,Qt.MatchExactly)
+        itemtoreturn = None
+        if len(items) > 0:
+            for item in items:
+                itemtoreturn = item
+
+        return itemtoreturn
+
     def b11func(self):#CREATE NOTE
         text,yuhhuh = QInputDialog.getText(win,"Smart Notes","Enter a name for the note:")
         if text and yuhhuh:
@@ -170,7 +201,9 @@ class ButtonFunctions:
                 msgbox.setStandardButtons(QMessageBox.Ok)
                 msgbox.exec()
             else:
-                LT.addtoList(text,"",[])
+                LT.addtoList(text,settings["starttext"],[])
+                item = self.getItemFromText(text)
+                self.changeChosenItem(item)
 
     def b12func(self):#DELETE NOTE
         if self.chosenItem!=None:
@@ -182,15 +215,17 @@ class ButtonFunctions:
             msgbox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
             result = msgbox.exec()
             if result==QMessageBox.Yes:
+                oldrow = listw.row(self.chosenItem)#starts from 0 :/
                 LT.removefromList(self.chosenItem)
-                self.changeChosenItem(None)
+                newitem = listw.item(oldrow-1) if oldrow-1>=0 else None#selects previous note if possible
+                self.changeChosenItem(newitem)
 
     def b1func(self):#SAVE NOTE (USED BY TEXT CHANGE NOW)
         if self.chosenItem!=None:
             tbText = textbox.toPlainText()
-            noteName = self.chosenItem.text()
-            if tbText!="":
-                print(tbText,noteName)
+            noteName = self.chosenItem.text() #breaks when item isnt in the widget
+            if tbText!="":#turns out that prevents delete note crash
+                self.updateEditingText(self.chosenItem)
                 LT.savetoList(noteName,tbText)
 
     def b21func(self):#ADD TAG
@@ -202,6 +237,7 @@ class ButtonFunctions:
             LT.removeTag(self.chosenItem,linee3.text())
 
     def b2func(self):#SHOW NOTES BY TAG
+        self.changeChosenItem(None)#prevents crashing
         LT.showALLnotes(linee3.text())
 
     def settings_style(self,item):
@@ -213,7 +249,7 @@ class ButtonFunctions:
         themesavailable = os.listdir("./Themes")
         for theme in themesavailable:
             modifiedname = theme[0:len(theme)-4]
-            themebutton = stylelist.addItem(modifiedname)
+            stylelist.addItem(modifiedname)
 
         settingswin.show()
 BFuncs = ButtonFunctions()
@@ -245,7 +281,7 @@ textl.setText("List of Notes")
 
 listw = LT.addWidget({"widget":QListWidget(win),"name":"listw","layout":"BigVert"})
 listw.setFixedSize(int((sx/2)+getscaledsize("x",25)),getscaledsize("y",200))
-listw.itemClicked.connect(BFuncs.listItemClicked) # get note
+listw.itemClicked.connect(BFuncs.changeChosenItem) # get note
 listw.itemDoubleClicked.connect(BFuncs.listItemDoubleClicked) # prompt rename
 
 #2b
@@ -310,7 +346,7 @@ settingswin.setWindowTitle(wtitle+" - Settings")
 settingswin.setWindowIcon(wicon)
 
 settingswin.move(int((ssx/2)-(sx/4)),int((ssy/2)-(sy/2)))
-settingswin.setFixedSize(int(sx/2),int(sy/2))
+settingswin.setFixedSize(int(sx/2),int(sy/1.75))
 
 BVert1 = LT.addLayout({"layout":QVBoxLayout(settingswin),"name":"BVert1"})
 #BigVert.addLayout(SmallHoriz2)
@@ -326,8 +362,19 @@ stylelist.itemClicked.connect(BFuncs.settings_style)
 textslc = LT.addWidget({"widget":QLabel(win),"name":"textslc","layout":"BVert1"})
 textslc.setText("Chosen Style: "+settings["theme"])
 
-thatsit = LT.addWidget({"widget":QLabel(win),"name":"thatsit","layout":"BVert1"})
-thatsit.setText("\nYep. Thats it. Nothing else in settings.")
+sizetoggle = LT.addWidget({"widget":QCheckBox(win),"name":"sizetoggle","layout":"BVert1"})
+sizetoggle.setText("Toggle letters counter while editing.")
+sizetoggle.setChecked(settings["lettercount"])
+sizetoggle.stateChanged.connect(lambda: changeSetting("lettercount",sizetoggle.isChecked()))
+
+starttextlabel = LT.addWidget({"widget":QLabel(win),"name":"starttextlabel","layout":"BVert1"})
+starttextlabel.setText("Starting Note Text (on creation):")
+
+starttextedit = LT.addWidget({"widget":QLineEdit(win),"name":"starttextedit","layout":"BVert1"})
+starttextedit.setFixedSize(int(sx/2)-getscaledsize("x",25),getscaledsize("y",30))
+starttextedit.setPlaceholderText("...")
+starttextedit.setText(settings["starttext"])
+starttextedit.textChanged.connect(lambda: changeSetting("starttext",starttextedit.text()))
 
 BVert1.addStretch() # ---
 # CONNECT FUNCTIONS

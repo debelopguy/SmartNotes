@@ -1,0 +1,9 @@
+QWidget
+{
+    background-color:rgb(21, 36, 21);
+    color:rgb(196, 248, 198);
+    selection-color:rgb(131, 255, 139);
+    selection-background-color:rgb(48, 73, 41);
+    font-family:Georgia;
+    font: bold italic;
+}

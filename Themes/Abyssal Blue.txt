@@ -1,0 +1,9 @@
+QWidget
+{
+    background-color:rgb(21, 23, 36);
+    color:rgb(201, 208, 248);
+    selection-color:rgb(130, 143, 255);
+    selection-background-color:rgb(40, 52, 73);
+    font-family:MS UI Gothic;
+    font: bold 16px;
+}

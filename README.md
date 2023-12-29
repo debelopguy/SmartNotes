@@ -13,4 +13,4 @@ Made for a school assignment but i decided to expand on it : D
 * you can also rename a note by double clicking on it, incase you named your note in a hurry
 * you can customize your smart notes experience with settings such as changing styles (and more to come)
 
-More features will be added if i feel like it
+More features will be added if deb (or me) feel like it

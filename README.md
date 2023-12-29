@@ -1,6 +1,8 @@
 # SmartNotes
 ![snex](https://github.com/debelopguy/SmartNotes/assets/143162937/ad5421af-b31a-4506-8cae-fe6217b54ae7)
 
+My branch of deb's Smart notes, just wanna contribute.
+
 Convenient tool for saving down notes without the need of .txt management and other fun stuff
 
 Made for a school assignment but i decided to expand on it : D

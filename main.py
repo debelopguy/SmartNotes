@@ -2,7 +2,12 @@
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-import json,os, re
+import json, os, re
+#from github import Github as git
+
+#Time for some github testing
+#smartnotes = git.get_repo("Soinpro/aZoNotes")
+
 #UI
 app = QApplication([])
 win = QWidget()
@@ -110,7 +115,7 @@ def ApplyStyle(style):
 ApplyStyle(settings["theme"])
 
 win.move(int((ssx/2)-(sx/2)-(getscaledsize("x",100)/2)),int((ssy/2)-(sy/2)-(getscaledsize("y",50)/2)))
-win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",50))
+win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100)) # Updated y scale to account for line breaks.
 #LAYOUTING 🔥🔥🔥🔥🔥🔥🔥🔥
 class Layouting:
     def __init__(self):
@@ -319,6 +324,7 @@ BiggerVert.addStretch() # ---
 
 currenttext = LT.addWidget({"widget":QLabel(win),"name":"currenttext","layout":"BiggerVert"})
 currenttext.setText("Currently editing: ???")
+currenttext.setWordWrap(True)
 
 textbox = LT.addWidget({"widget":QTextEdit(win),"name":"textbox","layout":"BiggerVert"})
 textbox.setFixedSize(int(sx/2),int(sy))

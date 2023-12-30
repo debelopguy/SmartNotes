@@ -3,10 +3,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 import json, os, re
-#from github import Github as git
-
-#Time for some github testing
-#smartnotes = git.get_repo("Soinpro/aZoNotes")
 
 #UI
 app = QApplication([])

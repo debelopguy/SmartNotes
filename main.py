@@ -36,6 +36,7 @@ else:
             settings = json.load(settingsfp)
             with open(AppDataFolder+r"\DebSmartNotes\settings.json","w") as newsettingsfp:
                 json.dump(settings,newsettingsfp)
+        os.remove("settings.json")
     else:
         with open(AppDataFolder+r"\DebSmartNotes\settings.json","w") as newsettingsfp:
             json.dump({},newsettingsfp)
@@ -46,6 +47,7 @@ else:
         with open("notes.json","r") as notesfp:
             with open(AppDataFolder+r"\DebSmartNotes\notes.json","w") as newnotesfp:
                 newnotesfp.write(notesfp.read())
+        os.remove("notes.json")
     else:
         with open(AppDataFolder+r"\DebSmartNotes\notes.json","w") as newnotesfp:
             json.dump({},newnotesfp)
@@ -64,7 +66,7 @@ defaultsettings = {
     "starttext":"",
 }
 
-wicon = QIcon("notebook.png")
+wicon = QIcon(smartnotesdir+r"\notebook.png")
 wtitle = "Smart Notes 📝"
 
 win.setWindowIcon(wicon)

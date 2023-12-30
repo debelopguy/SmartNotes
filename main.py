@@ -62,7 +62,7 @@ def ApplyStyle(style):
 ApplyStyle(settings["theme"])
 
 win.move(int((ssx/2)-(sx/2)-(getscaledsize("x",100)/2)),int((ssy/2)-(sy/2)-(getscaledsize("y",50)/2)))
-win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",50))
+win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100))
 #LAYOUTING 🔥🔥🔥🔥🔥🔥🔥🔥
 class Layouting:
     def __init__(self):
@@ -264,6 +264,7 @@ BiggerVert.addStretch() # ---
 
 currenttext = LT.addWidget({"widget":QLabel(win),"name":"currenttext","layout":"BiggerVert"})
 currenttext.setText("Currently Editing: ???")
+currenttext.setWordWrap(True)
 
 textbox = LT.addWidget({"widget":QTextEdit(win),"name":"textbox","layout":"BiggerVert"})
 textbox.setFixedSize(int(sx/2),int(sy))

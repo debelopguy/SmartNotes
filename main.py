@@ -113,7 +113,11 @@ def ApplyStyle(style):
 ApplyStyle(settings["theme"])
 
 win.move(int((ssx/2)-(sx/2)-(getscaledsize("x",100)/2)),int((ssy/2)-(sy/2)-(getscaledsize("y",50)/2)))
+<<<<<<< HEAD
 win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100)) # Updated y scale to account for line breaks.
+=======
+win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",50))
+>>>>>>> parent of 0a06ee9 (text wrapping)
 #LAYOUTING 🔥🔥🔥🔥🔥🔥🔥🔥
 class Layouting:
     def __init__(self):
@@ -321,8 +325,12 @@ BigHoriz.addLayout(BiggerVert)
 BiggerVert.addStretch() # ---
 
 currenttext = LT.addWidget({"widget":QLabel(win),"name":"currenttext","layout":"BiggerVert"})
+<<<<<<< HEAD
 currenttext.setText("Currently editing: ???")
 currenttext.setWordWrap(True)
+=======
+currenttext.setText("Currently Editing: ???")
+>>>>>>> parent of 0a06ee9 (text wrapping)
 
 textbox = LT.addWidget({"widget":QTextEdit(win),"name":"textbox","layout":"BiggerVert"})
 textbox.setFixedSize(int(sx/2),int(sy))

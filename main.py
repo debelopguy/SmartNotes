@@ -2,71 +2,23 @@
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-import json, os, re
-
+from random import*
+import json,os
 #UI
 app = QApplication([])
 win = QWidget()
 settingswin = QWidget()
 
-#checking main directory TODO for later... this stupid thing doesnt work
-#time to check that :trol: - aZo
-
 #loading files
-#notes = open("notes.json","r") OBSOLETE? Checked, it is obsolete.
-#settings = json.load(open("settings.json","r")) 
-# ^^^ Base
-
-smartnotesdir = os.path.abspath("./") # Full location of smart notes.
-
-AppDataFolder = os.path.abspath(os.environ["LOCALAPPDATA"])
-if os.path.exists(AppDataFolder+r"\DebSmartNotes"):
-    print("loading.")
-    os.chdir(AppDataFolder+r"\DebSmartNotes") # ./ now reffers to localappdata/DebSmartNotes
-    print(f"Set current path to {os.curdir}")
-    with open("settings.json","r") as settingsfp:
-        settings = json.load(settingsfp)
-else:
-    print("Making new dir")
-    os.mkdir(AppDataFolder+r"\DebSmartNotes")
-    #surely the user has data in the current place, right?
-    if os.path.exists("settings.json"):
-        print("Found settings in local dir, copying.")
-        with open("settings.json","r") as settingsfp:
-            settings = json.load(settingsfp)
-            with open(AppDataFolder+r"\DebSmartNotes\settings.json","w") as newsettingsfp:
-                json.dump(settings,newsettingsfp)
-        os.remove("settings.json")
-    else:
-        with open(AppDataFolder+r"\DebSmartNotes\settings.json","w") as newsettingsfp:
-            json.dump({},newsettingsfp)
-                
-    # now we do the same for notes
-    if os.path.exists("notes.json"):
-        print("Found notes in local dir, copying.")
-        with open("notes.json","r") as notesfp:
-            with open(AppDataFolder+r"\DebSmartNotes\notes.json","w") as newnotesfp:
-                newnotesfp.write(notesfp.read())
-        os.remove("notes.json")
-    else:
-        with open(AppDataFolder+r"\DebSmartNotes\notes.json","w") as newnotesfp:
-            json.dump({},newnotesfp)
-
-    os.chdir(AppDataFolder+"\DebSmartNotes") # Set the local path.
-    print(f"Set current path to {os.path.curdir}")
-
-            
-
-
-
+notes = open("notes.json","r")
+settings = json.load(open("settings.json","r"))
 defaultsettings = {
     "theme":"Default",
     "lettercount":False,
-    "wordcount":False,
     "starttext":"",
 }
 
-wicon = QIcon(smartnotesdir+r"\notebook.png")
+wicon = QIcon("notebook.png")
 wtitle = "Smart Notes 📝"
 
 win.setWindowIcon(wicon)
@@ -84,20 +36,13 @@ def changeSetting(setting,newval):
     settings[setting]=newval
     with open("settings.json","w") as f:
         json.dump(settings,f)
-
-    # quality
-    if (setting == "lettercount" or setting == "wordcount") and BFuncs.chosenItem is not None:
-        BFuncs.updateEditingText(BFuncs.chosenItem)        
-
-
 #setup settings
 for setting in defaultsettings:
     if not setting in settings:
         changeSetting(setting,defaultsettings[setting])
 
-
 def ApplyStyle(style):
-    stylepath = smartnotesdir+r"\Themes\\"+style+".txt"
+    stylepath = "./Themes/"+style+".txt"
     if os.path.exists(stylepath)==True:
         StyleSheet = open(stylepath,"r").read()
         app.setStyleSheet(StyleSheet)
@@ -113,11 +58,7 @@ def ApplyStyle(style):
 ApplyStyle(settings["theme"])
 
 win.move(int((ssx/2)-(sx/2)-(getscaledsize("x",100)/2)),int((ssy/2)-(sy/2)-(getscaledsize("y",50)/2)))
-<<<<<<< HEAD
-win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100)) # Updated y scale to account for line breaks.
-=======
-win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",50))
->>>>>>> parent of 0a06ee9 (text wrapping)
+win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100))
 #LAYOUTING 🔥🔥🔥🔥🔥🔥🔥🔥
 class Layouting:
     def __init__(self):
@@ -211,15 +152,8 @@ class ButtonFunctions:
         self.chosenItem = None
 
     def updateEditingText(self,newitem):
-        if newitem is not None:
-            finalstr = f"Currently editing: {newitem.text()}"
-            lettercount = f" ({str(len(textbox.toPlainText()))} letters)" if settings["lettercount"] else ""
-            wordcount = f" ({len(re.findall(r'[a-zA-Z]+',textbox.toPlainText()))} words)" if settings["wordcount"] else ""
-            finalstr += wordcount
-            finalstr += lettercount
-        else:
-            finalstr = "Currently editing: ???"
-        currenttext.setText(finalstr)
+        lettercount = " ("+str(len(textbox.toPlainText()))+" letters)" if settings["lettercount"] else ""
+        currenttext.setText("Currently Editing: "+(newitem.text()+lettercount if newitem!=None else "???"))
 
     def changeChosenItem(self,newitem):
         self.chosenItem = newitem
@@ -308,7 +242,7 @@ class ButtonFunctions:
     def b3func(self):#TODO SETTINGS BUTTON
         #update style stuff
         stylelist.clear()
-        themesavailable = os.listdir(smartnotesdir+r"\Themes")
+        themesavailable = os.listdir("./Themes")
         for theme in themesavailable:
             modifiedname = theme[0:len(theme)-4]
             stylelist.addItem(modifiedname)
@@ -325,12 +259,8 @@ BigHoriz.addLayout(BiggerVert)
 BiggerVert.addStretch() # ---
 
 currenttext = LT.addWidget({"widget":QLabel(win),"name":"currenttext","layout":"BiggerVert"})
-<<<<<<< HEAD
-currenttext.setText("Currently editing: ???")
-currenttext.setWordWrap(True)
-=======
 currenttext.setText("Currently Editing: ???")
->>>>>>> parent of 0a06ee9 (text wrapping)
+currenttext.setWordWrap(True)
 
 textbox = LT.addWidget({"widget":QTextEdit(win),"name":"textbox","layout":"BiggerVert"})
 textbox.setFixedSize(int(sx/2),int(sy))
@@ -429,15 +359,10 @@ stylelist.itemClicked.connect(BFuncs.settings_style)
 textslc = LT.addWidget({"widget":QLabel(win),"name":"textslc","layout":"BVert1"})
 textslc.setText("Chosen Style: "+settings["theme"])
 
-letterstoggle = LT.addWidget({"widget":QCheckBox(win),"name":"sizetoggle","layout":"BVert1"})
-letterstoggle.setText("Toggle letters counter while editing.")
-letterstoggle.setChecked(settings["lettercount"])
-letterstoggle.stateChanged.connect(lambda: changeSetting("lettercount",letterstoggle.isChecked()))
-
-wordstoggle = LT.addWidget({"widget":QCheckBox(win),"name":"sizetoggle","layout":"BVert1"})
-wordstoggle.setText("Toggle words counter while editing.")
-wordstoggle.setChecked(settings["wordcount"])
-wordstoggle.stateChanged.connect(lambda: changeSetting("wordcount",wordstoggle.isChecked()))
+sizetoggle = LT.addWidget({"widget":QCheckBox(win),"name":"sizetoggle","layout":"BVert1"})
+sizetoggle.setText("Toggle letters counter while editing.")
+sizetoggle.setChecked(settings["lettercount"])
+sizetoggle.stateChanged.connect(lambda: changeSetting("lettercount",sizetoggle.isChecked()))
 
 starttextlabel = LT.addWidget({"widget":QLabel(win),"name":"starttextlabel","layout":"BVert1"})
 starttextlabel.setText("Starting Note Text (on creation):")

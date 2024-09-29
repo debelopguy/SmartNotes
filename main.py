@@ -59,24 +59,39 @@ ApplyStyle(settings["theme"])
 
 win.move(int((ssx/2)-(sx/2)-(getscaledsize("x",100)/2)),int((ssy/2)-(sy/2)-(getscaledsize("y",50)/2)))
 win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100))
-#LAYOUTING 🔥🔥🔥🔥🔥🔥🔥🔥
-class Layouting:
+#UI & BUTTON FUNCTIONS
+class SNFuncs:
     def __init__(self):
         self.layouts={}
         self.widgets={}
         self.listitems={}
+
+        self.chosenItem = None
+        self.chosenTagText = None
+
         with open("notes.json","r") as f:
             self.listitems = json.load(f)
     #RENDER ALL EXISTING NOTES
     def showALLnotes(self,tag):
-        self.widgets["listw"].clear()
-        textl.setText("List of Notes"+(" (with tag \""+tag+"\")" if tag!="" else ""))
+        #no tag entered get it from selected
+        if tag == "" and self.chosenTagText:
+            tag = self.chosenTagText
+            self.chosenTagText = None
+
+        self.widgets["ListOfNotes"].clear()
+        ListOfNotesLabel.setText("List of Notes"+(" (with tag \""+tag+"\")" if tag!="" else ""))
         for thing in self.listitems:
+            #tag specific render
             tagFound = False
             if not "tags" in self.listitems[thing]:
                 self.listitems[thing]["tags"]=[]
-            for ctag in self.listitems[thing]["tags"]:
-                tagFound = True if ctag.find(tag)!=-1 else False
+            for currentTag in self.listitems[thing]["tags"]:
+                lowerCurrentTag,lowerTag = currentTag.lower(),tag.lower()
+
+                tagFound = (lowerCurrentTag == lowerTag or lowerCurrentTag.find(lowerTag)!=-1)
+                if tagFound:
+                    break
+            #show note here
             if tagFound or tag=="":
                 self.addtoList(self.listitems[thing]["name"],self.listitems[thing]["savedtext"],self.listitems[thing]["tags"])
     #LAYOUT/WIDGET STUFF
@@ -97,7 +112,7 @@ class Layouting:
         return True if txt in self.listitems else False
     
     def addtoList(self,txt,note,tags):
-        listitem = self.widgets["listw"].addItem(txt)
+        listitem = self.widgets["ListOfNotes"].addItem(txt)
         self.listitems[txt]={"obj":listitem,"name":txt,"savedtext":note,"tags":tags}
         self.savelist()
 
@@ -111,8 +126,8 @@ class Layouting:
     def removefromList(self,item):
         noteName = item.text()
         self.listitems.pop(noteName)
-        self.widgets["listw"].takeItem(self.widgets["listw"].row(item))
-        textbox.setText("")
+        self.widgets["ListOfNotes"].takeItem(self.widgets["ListOfNotes"].row(item))
+        NoteTextBox.setText("")
         self.savelist()
 
     def renameItem(self,item,newname):
@@ -124,9 +139,9 @@ class Layouting:
         self.listitems[newname]=oldval
 
         item.setText(newname)
-        BFuncs.changeChosenItem(None)
-        textbox.setText("")
-        self.showALLnotes(linee3.text())
+        SN.changeChosenItem(None)
+        NoteTextBox.setText("")
+        self.showALLnotes(TagTextBox.text())
         self.savelist()
     #tags
     def addTag(self,item,tag):
@@ -145,28 +160,26 @@ class Layouting:
             for tag in self.listitems[item.text()]["tags"]:
                 tagitem = taglist.addItem(tag)
 
-LT = Layouting()
-# FUNCTIONS
-class ButtonFunctions:
-    def __init__(self):
-        self.chosenItem = None
-
+    def changeChosenTag(self,newitem):
+        self.chosenTagText = newitem.text()
+    
+    #other stuff
     def updateEditingText(self,newitem):
-        lettercount = " ("+str(len(textbox.toPlainText()))+" letters)" if settings["lettercount"] else ""
-        currenttext.setText("Currently Editing: "+(newitem.text()+lettercount if newitem!=None else "???"))
+        lettercount = " ("+str(len(NoteTextBox.toPlainText()))+" letters)" if settings["lettercount"] else ""
+        CurrentEditingLabel.setText("Currently Editing: "+(newitem.text()+lettercount if newitem!=None else "???"))
 
     def changeChosenItem(self,newitem):
         self.chosenItem = newitem
-        textbox.setText("" if not newitem else LT.returnNote(self.chosenItem.text()))
+        NoteTextBox.setText("" if not newitem else SN.returnNote(self.chosenItem.text()))
         self.updateEditingText(newitem)
-        listw.setCurrentItem(newitem)#visual selection:D
-        LT.redrawTags(self.chosenItem)
+        ListOfNotes.setCurrentItem(newitem)#visual selection:D
+        SN.redrawTags(self.chosenItem)
 
     def listItemDoubleClicked(self,item):
         self.changeChosenItem(item)
         text,yuhhuh = QInputDialog.getText(win,"Smart Notes","Enter a new name for the note:",text=item.text())
         if text and yuhhuh:
-            if LT.noteExists(text):
+            if SN.noteExists(text):
                 msgbox = QMessageBox()
                 msgbox.setText("⚠ Watch out!")
                 msgbox.setWindowTitle(wtitle)
@@ -175,9 +188,9 @@ class ButtonFunctions:
                 msgbox.setStandardButtons(QMessageBox.Ok)
                 msgbox.exec()
             else:
-                LT.renameItem(item,text)
+                SN.renameItem(item,text)
     def getItemFromText(self,text):
-        items = listw.findItems(text,Qt.MatchExactly)
+        items = ListOfNotes.findItems(text,Qt.MatchExactly)
         itemtoreturn = None
         if len(items) > 0:
             for item in items:
@@ -185,10 +198,10 @@ class ButtonFunctions:
 
         return itemtoreturn
 
-    def b11func(self):#CREATE NOTE
+    def CreateNewNoteWithPrompt(self):#CREATE NOTE
         text,yuhhuh = QInputDialog.getText(win,"Smart Notes","Enter a name for the note:")
         if text and yuhhuh:
-            if LT.noteExists(text):
+            if SN.noteExists(text):
                 msgbox = QMessageBox()
                 msgbox.setText("⚠ Watch out!")
                 msgbox.setWindowTitle(wtitle)
@@ -197,11 +210,11 @@ class ButtonFunctions:
                 msgbox.setStandardButtons(QMessageBox.Ok)
                 msgbox.exec()
             else:
-                LT.addtoList(text,settings["starttext"],[])
+                SN.addtoList(text,settings["starttext"],[])
                 item = self.getItemFromText(text)
                 self.changeChosenItem(item)
 
-    def b12func(self):#DELETE NOTE
+    def DeleteNoteWithPrompt(self):#DELETE NOTE
         if self.chosenItem!=None:
             msgbox = QMessageBox()
             msgbox.setText("⚠ Confirm deletion")
@@ -211,129 +224,145 @@ class ButtonFunctions:
             msgbox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
             result = msgbox.exec()
             if result==QMessageBox.Yes:
-                oldrow = listw.row(self.chosenItem)#starts from 0 :/
-                LT.removefromList(self.chosenItem)
-                newitem = listw.item(oldrow-1) if oldrow-1>=0 else None#selects previous note if possible
+                oldrow = ListOfNotes.row(self.chosenItem)#starts from 0 :/
+                SN.removefromList(self.chosenItem)
+                newitem = ListOfNotes.item(oldrow-1) if oldrow-1>=0 else None#selects previous note if possible
                 self.changeChosenItem(newitem)
 
-    def b1func(self):#SAVE NOTE (USED BY TEXT CHANGE NOW)
+    def SaveNoteContents(self):#SAVE NOTE (USED BY TEXT CHANGE NOW)
         if self.chosenItem!=None:
-            tbText = textbox.toPlainText()
+            tbText = NoteTextBox.toPlainText()
             noteName = self.chosenItem.text() #breaks when item isnt in the widget
             if tbText!="":#turns out that prevents delete note crash
                 self.updateEditingText(self.chosenItem)
-                LT.savetoList(noteName,tbText)
+                SN.savetoList(noteName,tbText)
 
-    def b21func(self):#ADD TAG
-        if self.chosenItem!=None and linee3.text()!="":
-            LT.addTag(self.chosenItem,linee3.text())
+    def AddTagToNote(self):#ADD TAG
+        if self.chosenItem!=None and TagTextBox.text()!="":
+            SN.addTag(self.chosenItem,TagTextBox.text())
 
-    def b22func(self):#REMOVE TAG
-        if self.chosenItem!=None and linee3.text()!="":
-            LT.removeTag(self.chosenItem,linee3.text())
+    def RemoveTagFromNote(self):#REMOVE TAG
+        if self.chosenItem!=None and TagTextBox.text()!="":
+            SN.removeTag(self.chosenItem,TagTextBox.text())
 
-    def b2func(self):#SHOW NOTES BY TAG
+    def ShowNotesWithTag(self):#SHOW NOTES BY TAG
         self.changeChosenItem(None)#prevents crashing
-        LT.showALLnotes(linee3.text())
-
+        SN.showALLnotes(TagTextBox.text())
+    
+    #SETTINGS STUFF
     def settings_style(self,item):
-        textslc.setText("Chosen Style: "+item.text())
+        SelectedStyleLabel.setText("Chosen Style: "+item.text())
         ApplyStyle(item.text())
-    def b3func(self):#TODO SETTINGS BUTTON
+
+    def ShowSettingsWindow(self):#TODO SETTINGS BUTTON
         #update style stuff
         stylelist.clear()
         themesavailable = os.listdir("./Themes")
         for theme in themesavailable:
-            modifiedname = theme[0:len(theme)-4]
-            stylelist.addItem(modifiedname)
+            if theme.endswith(".txt"):
+                modifiedname = theme[0:len(theme)-4]
+                stylelist.addItem(modifiedname)
 
+        win.hide()
         settingswin.show()
-BFuncs = ButtonFunctions()
+
+    def ShowMainWindow(self):
+        win.show()
+        settingswin.hide()
+
+    def FindMatchingTextWithPrompt(self):
+        text,yuhhuh = QInputDialog.getText(win,wtitle+" - Find Matching Text","Enter text to find:")
+        if text and yuhhuh:
+            cursor = NoteTextBox.textCursor()
+            cursor.setPosition(0)
+            NoteTextBox.setTextCursor(cursor)
+            findResult = NoteTextBox.find(text)
+
+#do the rest here
+SN = SNFuncs()
 
 #MAIN UI 🔥🔥🔥
-BigHoriz = LT.addLayout({"layout":QHBoxLayout(win),"name":"BigHoriz1"})
+BigHoriz = SN.addLayout({"layout":QHBoxLayout(win),"name":"BigHoriz1"})
 BigHoriz.addStretch() # ---
 #1st bighoriz
-BiggerVert = LT.addLayout({"layout":QVBoxLayout(win),"name":"BiggerVert"})
+BiggerVert = SN.addLayout({"layout":QVBoxLayout(win),"name":"BiggerVert"})
 BigHoriz.addLayout(BiggerVert)
 BiggerVert.addStretch() # ---
 
-currenttext = LT.addWidget({"widget":QLabel(win),"name":"currenttext","layout":"BiggerVert"})
-currenttext.setText("Currently Editing: ???")
-currenttext.setWordWrap(True)
+CurrentEditingLabel = SN.addWidget({"widget":QLabel(win),"name":"CurrentEditingLabel","layout":"BiggerVert"})
+CurrentEditingLabel.setText("Currently Editing: ???")
+CurrentEditingLabel.setWordWrap(True)
 
-textbox = LT.addWidget({"widget":QTextEdit(win),"name":"textbox","layout":"BiggerVert"})
-textbox.setFixedSize(int(sx/2),int(sy))
-textbox.textChanged.connect(BFuncs.b1func)#autosave
+NoteTextBox = SN.addWidget({"widget":QTextEdit(win),"name":"NoteTextBox","layout":"BiggerVert"})
+NoteTextBox.setFixedSize(int(sx/2),int(sy))
+NoteTextBox.textChanged.connect(SN.SaveNoteContents)#autosave
 
 BiggerVert.addStretch() # ---
 #2nd part of bighoriz
 #title, input, smalled input, h
-BigVert = LT.addLayout({"layout":QVBoxLayout(win),"name":"BigVert"})
+BigVert = SN.addLayout({"layout":QVBoxLayout(win),"name":"BigVert"})
 BigHoriz.addLayout(BigVert)
 BigVert.addStretch() # ---
 
-textl = LT.addWidget({"widget":QLabel(win),"name":"textl","layout":"BigVert"})
-textl.setText("List of Notes")
+ListOfNotesLabel = SN.addWidget({"widget":QLabel(win),"name":"ListOfNotesLabel","layout":"BigVert"})
+ListOfNotesLabel.setText("List of Notes")
 
-listw = LT.addWidget({"widget":QListWidget(win),"name":"listw","layout":"BigVert"})
-listw.setFixedSize(int((sx/2)+getscaledsize("x",25)),getscaledsize("y",200))
-listw.itemClicked.connect(BFuncs.changeChosenItem) # get note
-listw.itemDoubleClicked.connect(BFuncs.listItemDoubleClicked) # prompt rename
+ListOfNotes = SN.addWidget({"widget":QListWidget(win),"name":"ListOfNotes","layout":"BigVert"})
+ListOfNotes.setFixedSize(int((sx/2)+getscaledsize("x",25)),getscaledsize("y",200))
+ListOfNotes.itemClicked.connect(SN.changeChosenItem) # get note
+ListOfNotes.itemDoubleClicked.connect(SN.listItemDoubleClicked) # prompt rename
 
 #2b
-SmallHoriz = LT.addLayout({"layout":QHBoxLayout(win),"name":"SmallHoriz"})
+SmallHoriz = SN.addLayout({"layout":QHBoxLayout(win),"name":"SmallHoriz"})
 BigVert.addLayout(SmallHoriz)
 SmallHoriz.addStretch() # ---
 
-b11 = LT.addWidget({"widget":QPushButton(win),"name":"b11","layout":"SmallHoriz"})
-b11.setText("Create Note")
-b11.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
-b12 = LT.addWidget({"widget":QPushButton(win),"name":"b12","layout":"SmallHoriz"})
-b12.setText("Delete Selected Note")
-b12.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
+CreateNoteButton = SN.addWidget({"widget":QPushButton(win),"name":"CreateNoteButton","layout":"SmallHoriz"})
+CreateNoteButton.setText("Create Note")
+CreateNoteButton.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
+DeleteNoteButton = SN.addWidget({"widget":QPushButton(win),"name":"DeleteNoteButton","layout":"SmallHoriz"})
+DeleteNoteButton.setText("Delete Selected Note")
+DeleteNoteButton.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
 #b
-"""b1 = LT.addWidget({"widget":QPushButton(win),"name":"b1","layout":"BigVert"})
-b1.setText(":3 doesnt work XD")
-b1.setFixedSize(int(sx/2)+getscaledsize("x",25),getscaledsize("y",25))"""
 SmallHoriz.addStretch() # ---
 
 #title + input
-textl2 = LT.addWidget({"widget":QLabel(win),"name":"textl2","layout":"BigVert"})
-textl2.setText("List of Tags")
+ListOfNotesLabel2 = SN.addWidget({"widget":QLabel(win),"name":"ListOfNotesLabel2","layout":"BigVert"})
+ListOfNotesLabel2.setText("List of Tags")
 
-taglist = LT.addWidget({"widget":QListWidget(win),"name":"taglist","layout":"BigVert"})
+taglist = SN.addWidget({"widget":QListWidget(win),"name":"taglist","layout":"BigVert"})
 taglist.setFixedSize(int(sx/2)+getscaledsize("x",25),getscaledsize("y",200))
+taglist.itemClicked.connect(SN.changeChosenTag) # change chosen tag for qol
 #small input
-linee3 = LT.addWidget({"widget":QLineEdit(win),"name":"linee3","layout":"BigVert"})
-linee3.setFixedSize(int(sx/2)+getscaledsize("x",25),getscaledsize("y",30))
-linee3.setPlaceholderText("Enter a Tag...")
+TagTextBox = SN.addWidget({"widget":QLineEdit(win),"name":"TagTextBox","layout":"BigVert"})
+TagTextBox.setFixedSize(int(sx/2)+getscaledsize("x",25),getscaledsize("y",30))
+TagTextBox.setPlaceholderText("Enter a Tag...")
 
 #2b
-SmallHoriz2 = LT.addLayout({"layout":QHBoxLayout(win),"name":"SmallHoriz2"})
+SmallHoriz2 = SN.addLayout({"layout":QHBoxLayout(win),"name":"SmallHoriz2"})
 BigVert.addLayout(SmallHoriz2)
 SmallHoriz2.addStretch() # ---
 
-b21 = LT.addWidget({"widget":QPushButton(win),"name":"b21","layout":"SmallHoriz2"})
-b21.setText("Add to the Note")
-b21.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
-b22 = LT.addWidget({"widget":QPushButton(win),"name":"b22","layout":"SmallHoriz2"})
-b22.setText("Remove from the Note")
-b22.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
+AddTagButton = SN.addWidget({"widget":QPushButton(win),"name":"AddTagButton","layout":"SmallHoriz2"})
+AddTagButton.setText("Add to the Note")
+AddTagButton.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
+RemoveTagButton = SN.addWidget({"widget":QPushButton(win),"name":"RemoveTagButton","layout":"SmallHoriz2"})
+RemoveTagButton.setText("Remove from the Note")
+RemoveTagButton.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
 #b
-b2 = LT.addWidget({"widget":QPushButton(win),"name":"b2","layout":"BigVert"})
-b2.setText("Search Notes by Tag")
-b2.setFixedSize(int(sx/2)+getscaledsize("x",25),getscaledsize("y",25))
+ShowNotesWithTagButton = SN.addWidget({"widget":QPushButton(win),"name":"ShowNotesWithTagButton","layout":"BigVert"})
+ShowNotesWithTagButton.setText("Search Notes by Tag")
+ShowNotesWithTagButton.setFixedSize(int(sx/2)+getscaledsize("x",25),getscaledsize("y",25))
 SmallHoriz2.addStretch() # ---
 
 #settings button
-SmallHoriz3 = LT.addLayout({"layout":QHBoxLayout(win),"name":"SmallHoriz3"})
+SmallHoriz3 = SN.addLayout({"layout":QHBoxLayout(win),"name":"SmallHoriz3"})
 BigVert.addLayout(SmallHoriz3)
 SmallHoriz3.addStretch() # ---
 
-b3 = LT.addWidget({"widget":QPushButton(win),"name":"b21","layout":"SmallHoriz3"})
-b3.setText("⚙Settings")
-b3.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
+ShowSettingsWindowButton = SN.addWidget({"widget":QPushButton(win),"name":"AddTagButton","layout":"SmallHoriz3"})
+ShowSettingsWindowButton.setText("⚙Settings")
+ShowSettingsWindowButton.setFixedSize(int(sx/4)+getscaledsize("x",10),getscaledsize("y",25))
 
 SmallHoriz3.addStretch() # ---
 BigHoriz.addStretch() # ---
@@ -343,31 +372,35 @@ settingswin.setWindowTitle(wtitle+" - Settings")
 settingswin.setWindowIcon(wicon)
 
 settingswin.move(int((ssx/2)-(sx/4)),int((ssy/2)-(sy/2)))
-settingswin.setFixedSize(int(sx/2),int(sy/1.75))
+settingswin.setFixedSize(int(sx/2),int(sy/1.5))
 
-BVert1 = LT.addLayout({"layout":QVBoxLayout(settingswin),"name":"BVert1"})
+BVert1 = SN.addLayout({"layout":QVBoxLayout(settingswin),"name":"BVert1"})
 #BigVert.addLayout(SmallHoriz2)
 BVert1.addStretch() # ---
+#return to main button
+ReturnToMainWindowButton = SN.addWidget({"widget":QPushButton(win),"name":"ReturnToMainWindowButton","layout":"BVert1"})
+ReturnToMainWindowButton.setText("Return to "+wtitle)
+ReturnToMainWindowButton.setFixedSize(int(sx/2)-getscaledsize("x",25),getscaledsize("y",25))
 #style list
-textsl = LT.addWidget({"widget":QLabel(win),"name":"textsl","layout":"BVert1"})
+textsl = SN.addWidget({"widget":QLabel(win),"name":"textsl","layout":"BVert1"})
 textsl.setText("List of Styles")
 
-stylelist = LT.addWidget({"widget":QListWidget(win),"name":"stylelist","layout":"BVert1"})
+stylelist = SN.addWidget({"widget":QListWidget(win),"name":"stylelist","layout":"BVert1"})
 stylelist.setFixedSize(int(sx/2)-getscaledsize("x",25),getscaledsize("y",200))
-stylelist.itemClicked.connect(BFuncs.settings_style)
+stylelist.itemClicked.connect(SN.settings_style)
 
-textslc = LT.addWidget({"widget":QLabel(win),"name":"textslc","layout":"BVert1"})
-textslc.setText("Chosen Style: "+settings["theme"])
+SelectedStyleLabel = SN.addWidget({"widget":QLabel(win),"name":"SelectedStyleLabel","layout":"BVert1"})
+SelectedStyleLabel.setText("Chosen Style: "+settings["theme"])
 
-sizetoggle = LT.addWidget({"widget":QCheckBox(win),"name":"sizetoggle","layout":"BVert1"})
+sizetoggle = SN.addWidget({"widget":QCheckBox(win),"name":"sizetoggle","layout":"BVert1"})
 sizetoggle.setText("Toggle letters counter while editing.")
 sizetoggle.setChecked(settings["lettercount"])
 sizetoggle.stateChanged.connect(lambda: changeSetting("lettercount",sizetoggle.isChecked()))
 
-starttextlabel = LT.addWidget({"widget":QLabel(win),"name":"starttextlabel","layout":"BVert1"})
-starttextlabel.setText("Starting Note Text (on creation):")
+StartingNoteTextLabel = SN.addWidget({"widget":QLabel(win),"name":"StartingNoteTextLabel","layout":"BVert1"})
+StartingNoteTextLabel.setText("Starting Note Text (on creation):")
 
-starttextedit = LT.addWidget({"widget":QLineEdit(win),"name":"starttextedit","layout":"BVert1"})
+starttextedit = SN.addWidget({"widget":QLineEdit(win),"name":"starttextedit","layout":"BVert1"})
 starttextedit.setFixedSize(int(sx/2)-getscaledsize("x",25),getscaledsize("y",30))
 starttextedit.setPlaceholderText("...")
 starttextedit.setText(settings["starttext"])
@@ -375,17 +408,21 @@ starttextedit.textChanged.connect(lambda: changeSetting("starttext",starttextedi
 
 BVert1.addStretch() # ---
 # CONNECT FUNCTIONS
-b11.clicked.connect(BFuncs.b11func)
-b12.clicked.connect(BFuncs.b12func)
-#b1.clicked.connect(BFuncs.b1func)
-b21.clicked.connect(BFuncs.b21func)
-b22.clicked.connect(BFuncs.b22func)
-b2.clicked.connect(BFuncs.b2func)
-b3.clicked.connect(BFuncs.b3func)
+CreateNoteButton.clicked.connect(SN.CreateNewNoteWithPrompt)
+DeleteNoteButton.clicked.connect(SN.DeleteNoteWithPrompt)
+#b1.clicked.connect(SN.SaveNoteContents)
+AddTagButton.clicked.connect(SN.AddTagToNote)
+RemoveTagButton.clicked.connect(SN.RemoveTagFromNote)
+ShowNotesWithTagButton.clicked.connect(SN.ShowNotesWithTag)
+ShowSettingsWindowButton.clicked.connect(SN.ShowSettingsWindow)
+ReturnToMainWindowButton.clicked.connect(SN.ShowMainWindow)
 
-LT.showALLnotes("")
+SN.showALLnotes("")
 
 BigVert.addStretch() # ---
+
+#shortcuts
+FindWordsShortcut = QShortcut('Ctrl+F',win,SN.FindMatchingTextWithPrompt)
 
 #RUN
 win.show()

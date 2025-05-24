@@ -75,9 +75,9 @@ win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100))
 def UpdateRPC(Idling: bool):
     if settings["rpc"] and RPCConnected:
         if Idling:
-            RPC.update(state="Idle")  # Set the presence
+            RPC.update(details="Idle")  # Set the presence
         else:
-            RPC.update(state="Editing",details="a note with "+str(len(NoteTextBox.toPlainText()))+" letters")
+            RPC.update(details="Editing",state="a note with "+str(len(NoteTextBox.toPlainText()))+" letters")
 UpdateRPC(True)
 #UI & BUTTON FUNCTIONS
 class SNFuncs:

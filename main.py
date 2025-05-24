@@ -4,6 +4,17 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from random import*
 import json,os
+from pypresence import Presence
+
+client_id = "1375778718940790874"
+RPC = Presence(client_id,pipe=0)  # Initialize the client class
+RPCConnected = False
+try:
+    RPC.connect() # Start the handshake loop
+    RPCConnected = True
+except:
+    print("RPC FAILED TO CONNECT")
+
 #UI
 app = QApplication([])
 win = QWidget()
@@ -16,6 +27,7 @@ defaultsettings = {
     "theme":"Default",
     "lettercount":False,
     "starttext":"",
+    "rpc":False,
 }
 
 wicon = QIcon("notebook.png")
@@ -59,6 +71,14 @@ ApplyStyle(settings["theme"])
 
 win.move(int((ssx/2)-(sx/2)-(getscaledsize("x",100)/2)),int((ssy/2)-(sy/2)-(getscaledsize("y",50)/2)))
 win.setFixedSize(sx+getscaledsize("x",100),sy+getscaledsize("y",100))
+#RPC
+def UpdateRPC(Idling: bool):
+    if settings["rpc"] and RPCConnected:
+        if Idling:
+            RPC.update(state="Idle")  # Set the presence
+        else:
+            RPC.update(state="Editing",details="a note with "+str(len(NoteTextBox.toPlainText()))+" letters")
+UpdateRPC(True)
 #UI & BUTTON FUNCTIONS
 class SNFuncs:
     def __init__(self):
@@ -174,6 +194,7 @@ class SNFuncs:
         self.updateEditingText(newitem)
         ListOfNotes.setCurrentItem(newitem)#visual selection:D
         SN.redrawTags(self.chosenItem)
+        UpdateRPC(False)
 
     def listItemDoubleClicked(self,item):
         self.changeChosenItem(item)
@@ -405,6 +426,11 @@ starttextedit.setFixedSize(int(sx/2)-getscaledsize("x",25),getscaledsize("y",30)
 starttextedit.setPlaceholderText("...")
 starttextedit.setText(settings["starttext"])
 starttextedit.textChanged.connect(lambda: changeSetting("starttext",starttextedit.text()))
+
+rpctoggle = SN.addWidget({"widget":QCheckBox(win),"name":"rpctoggle","layout":"BVert1"})
+rpctoggle.setText("Toggle Discord Rich Presence.")
+rpctoggle.setChecked(settings["rpc"])
+rpctoggle.stateChanged.connect(lambda: changeSetting("rpc",rpctoggle.isChecked()))
 
 BVert1.addStretch() # ---
 # CONNECT FUNCTIONS
